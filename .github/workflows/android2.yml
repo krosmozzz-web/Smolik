@@ -1,0 +1,22 @@
+name: Android APK 2
+on:
+  workflow_dispatch:
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Распаковать проект
+        run: |
+          if [ -f smolik-rs-online.zip ]; then unzip -q smolik-rs-online.zip; fi
+          if [ -d smolik-rs ]; then echo "PROJ=smolik-rs" >> "$GITHUB_ENV"; else echo "PROJ=." >> "$GITHUB_ENV"; fi
+      - name: Версия Rust в образе
+        run: docker run --rm notfl3/cargo-apk rustc --version
+      - name: Собрать APK со старой версией fontdue
+        run: |
+          cd "$PROJ"
+          docker run --rm -v "$PWD":/root/src -w /root/src notfl3/cargo-apk sh -c "cargo generate-lockfile && cargo update -p fontdue --precise 0.9.2 && cd app && cargo quad-apk build --release"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: smolik-apk
+          path: ${{ env.PROJ }}/target/android-artifacts/**/*.apk
